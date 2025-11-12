@@ -1,0 +1,1 @@
+"""GUI-Module für Nippelboard"""

@@ -1,0 +1,140 @@
+# Nippelboard Funk - Konfiguration
+# Kopieren Sie diese Datei nach config.yaml und passen Sie die Werte an
+
+# Audio-Einstellungen
+audio:
+  # USB-Soundkarte für Funk-Monitoring
+  input_device: null  # null = Standard-Gerät, oder Index/Name angeben
+  output_device: null # null = Standard-Gerät
+
+  # Sample-Rate (Hz) - 44100 oder 48000 empfohlen
+  sample_rate: 44100
+
+  # Kanäle (1=Mono, 2=Stereo) - Mono reicht für Funk
+  channels: 1
+
+  # Buffer-Größe (Samples) - kleiner = niedrigere Latenz, höher = stabiler
+  buffer_size: 2048
+
+  # Ringbuffer-Größe für Dashcam (Sekunden)
+  ringbuffer_seconds: 45
+
+  # Clip-Aufnahme: Sekunden nach Button-Druck
+  clip_post_seconds: 15
+
+  # Audio-Format für Aufnahmen
+  recording_format: 'mp3'  # mp3, ogg, wav
+  recording_bitrate: '64k' # Bitrate für MP3/OGG (64k für Funk ausreichend)
+
+# GPIO-Button-Konfiguration
+gpio:
+  # GPIO-Pin-Nummern (BCM-Nummerierung)
+  clip_button_pin: 17
+  panic_button_pin: 27
+
+  # Pull-Up/Down Widerstände
+  pull_up_down: 'up'  # 'up' oder 'down'
+
+  # Debounce-Zeit (ms) gegen Prellen
+  debounce_ms: 300
+
+  # Button-Modus: 'rising', 'falling', 'both'
+  edge_detection: 'falling'
+
+# Verschlüsselung (Panik-Modus)
+crypto:
+  # Verschlüsselungs-Modus: 'symmetric' oder 'asymmetric'
+  # 'symmetric': Passwort-basiert (unsicher bei Beschlagnahmung!)
+  # 'asymmetric': Public-Key (nur Sie können entschlüsseln!)
+  mode: 'asymmetric'  # EMPFOHLEN: asymmetric
+
+  # === ASYMMETRISCHE VERSCHLÜSSELUNG (EMPFOHLEN) ===
+  # Public Key bleibt auf Gerät, Private Key extern aufbewahren
+  public_key_path: './public_key.pem'   # Auf Raspberry Pi
+  # Private Key NICHT auf Gerät speichern!
+  # Zum Entschlüsseln: python -m src.crypto.asymmetric decrypt <file> <out> <private_key.pem>
+
+  # === SYMMETRISCHE VERSCHLÜSSELUNG (UNSICHER) ===
+  # Nur verwenden wenn asymmetrisch nicht möglich
+  encryption_password: 'BITTE_ÄNDERN_SicheresPasswort123!'
+  pbkdf2_iterations: 100000
+  salt_length: 32
+
+# Speicherpfade
+storage:
+  # Basis-Datenverzeichnis
+  data_dir: './data'
+
+  # Nippel-Sounds
+  sounds_dir: './data/sounds'
+
+  # Aufnahmen
+  recordings_dir: './data/recordings'
+  clips_dir: './data/recordings/clips'
+  panic_dir: './data/recordings/panic'
+
+  # Datenbank
+  database: './data/nippelboard.db'
+
+  # Maximale Speichernutzung (GB) - Alte Clips werden gelöscht
+  max_storage_gb: 50
+
+# Nippelboard GUI
+gui:
+  # Fenster-Größe
+  window_width: 1024
+  window_height: 600
+
+  # Vollbild-Modus bei Start
+  fullscreen: false
+
+  # Button-Größe (Pixel)
+  button_width: 150
+  button_height: 150
+
+  # Spalten im Grid
+  grid_columns: 5
+
+  # Icon-Verzeichnis
+  icons_dir: './assets/icons'
+
+  # Theme
+  theme: 'dark'  # 'dark' oder 'light'
+
+# Sound-Downloads
+downloads:
+  # Erlaubte Domains für Downloads (Sicherheit)
+  allowed_domains:
+    - 'example.com'
+    - 'soundserver.local'
+
+  # Download-Timeout (Sekunden)
+  timeout: 30
+
+  # Maximale Dateigröße (MB)
+  max_file_size_mb: 10
+
+# Logging
+logging:
+  # Log-Level: DEBUG, INFO, WARNING, ERROR
+  level: 'INFO'
+
+  # Log-Datei
+  file: './nippelboard.log'
+
+  # Maximale Log-Größe (MB) vor Rotation
+  max_size_mb: 10
+
+  # Anzahl Backup-Logs
+  backup_count: 5
+
+# Performance
+performance:
+  # Audio-Thread-Priorität (0-99, höher = wichtiger)
+  audio_thread_priority: 90
+
+  # GUI-Update-Rate (ms)
+  gui_update_rate: 100
+
+  # Speicher-Cleanup-Intervall (Sekunden)
+  cleanup_interval: 300
