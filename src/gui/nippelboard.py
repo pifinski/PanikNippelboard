@@ -392,46 +392,76 @@ class NippelboardWindow(QMainWindow):
 
     def _add_sound_from_url(self):
         """Sound von URL herunterladen"""
+        # Zeige Info über unterstützte Plattformen
         url, ok = QInputDialog.getText(
             self,
-            "Sound-URL",
-            "URL zur Sound-Datei:"
+            "Sound von URL herunterladen",
+            "URL eingeben:\n\n"
+            "Unterstützt:\n"
+            "• YouTube (youtube.com, youtu.be)\n"
+            "• SoundCloud (soundcloud.com)\n"
+            "• TikTok, Twitter, Vimeo, etc.\n"
+            "• Direkte Audio-URLs (.mp3, .ogg)\n\n"
+            "URL:"
         )
 
         if not ok or not url:
             return
 
+        # Name eingeben (kann leer sein bei YouTube - dann wird Video-Titel verwendet)
         name, ok = QInputDialog.getText(
             self,
             "Sound-Name",
-            "Name für den Sound:"
+            "Name für den Sound:\n(leer lassen = automatisch von Video-Titel)"
         )
 
-        if not ok or not name:
+        if not ok:
             return
 
         # Download
         try:
-            QMessageBox.information(
-                self,
-                "Download",
-                "Sound wird heruntergeladen...\nBitte warten."
-            )
+            # Zeige Fortschritt
+            progress_msg = QMessageBox(self)
+            progress_msg.setWindowTitle("Download läuft...")
+            progress_msg.setText("Sound wird heruntergeladen...\nBitte warten.")
+            progress_msg.setStandardButtons(QMessageBox.NoButton)
+            progress_msg.show()
+
+            # Prozessiere Events damit Dialog angezeigt wird
+            from PyQt5.QtWidgets import QApplication
+            QApplication.processEvents()
 
             sound = self.sound_manager.add_sound_from_url(
-                name=name,
+                name=name if name.strip() else "",  # Leerer Name = auto-detect
                 url=url
             )
 
+            progress_msg.close()
+
             if sound:
-                QMessageBox.information(self, "Erfolg", f"Sound '{name}' heruntergeladen!")
+                QMessageBox.information(
+                    self,
+                    "Erfolg",
+                    f"Sound '{sound.name}' erfolgreich heruntergeladen!\n"
+                    f"Dauer: {sound.duration:.1f}s"
+                )
                 self._load_sounds()
             else:
-                QMessageBox.critical(self, "Fehler", "Download fehlgeschlagen!")
+                QMessageBox.critical(
+                    self,
+                    "Fehler",
+                    "Download fehlgeschlagen!\n\n"
+                    "Mögliche Ursachen:\n"
+                    "• URL nicht erreichbar\n"
+                    "• yt-dlp nicht installiert (für YouTube/SoundCloud)\n"
+                    "• Video zu lang (max. 5 Minuten)\n"
+                    "• Name existiert bereits\n\n"
+                    "Siehe Log für Details."
+                )
 
         except Exception as e:
             logger.error(f"Fehler beim Download: {e}")
-            QMessageBox.critical(self, "Fehler", str(e))
+            QMessageBox.critical(self, "Fehler", f"Download-Fehler:\n{str(e)}")
 
     def _on_settings_requested(self):
         """Einstellungen öffnen"""

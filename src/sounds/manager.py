@@ -17,6 +17,7 @@ from ..utils.database import (
     get_sound_by_name, update_sound_position, db_transaction
 )
 from ..audio.processor import AudioProcessor
+from .downloader import UniversalDownloader, check_yt_dlp_installed
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,12 @@ class SoundManager:
         self.max_file_size_mb = config.get('downloads.max_file_size_mb', 10)
 
         self.processor = AudioProcessor()
+
+        # Universal Downloader (YouTube, SoundCloud, etc.)
+        self.universal_downloader = UniversalDownloader()
+        self.yt_dlp_available = check_yt_dlp_installed()
+        if not self.yt_dlp_available:
+            logger.warning("yt-dlp nicht installiert - YouTube/SoundCloud Downloads nicht verfügbar")
 
         logger.info(f"SoundManager initialisiert (Dir={self.sounds_dir})")
 
@@ -107,18 +114,142 @@ class SoundManager:
             return None
 
     def add_sound_from_url(self, name: str, url: str,
-                          icon_url: str = None, position: int = None) -> Optional[NippelSound]:
+                          icon_url: str = None, position: int = None,
+                          auto_trim: bool = False, max_duration: int = 300) -> Optional[NippelSound]:
         """
         Lädt Sound aus dem Internet herunter
+
+        Unterstützt:
+        - Direkte Audio-URLs (.mp3, .ogg, etc.)
+        - YouTube, SoundCloud, TikTok, etc. (via yt-dlp)
 
         Args:
             name: Anzeigename
             url: Download-URL
             icon_url: Optional Icon-URL
             position: Optional Position
+            auto_trim: Automatisch auf max_duration kürzen
+            max_duration: Maximale Dauer in Sekunden (default: 300 = 5 Min)
 
         Returns:
             NippelSound oder None bei Fehler
+        """
+        try:
+            # Prüfe ob es eine YouTube/SoundCloud/etc. URL ist
+            if self.yt_dlp_available and self.universal_downloader.is_supported_url(url):
+                logger.info(f"Erkannt als Universal-URL (YouTube/SoundCloud/etc.): {url}")
+                return self._download_universal(name, url, position, max_duration)
+
+            # Ansonsten: Direkter Download
+            return self._download_direct(name, url, icon_url, position)
+
+        except Exception as e:
+            logger.error(f"Fehler bei Sound-Download: {e}")
+            return None
+
+    def _download_universal(self, name: str, url: str, position: int = None,
+                           max_duration: int = 300) -> Optional[NippelSound]:
+        """
+        Download via yt-dlp (YouTube, SoundCloud, etc.)
+
+        Args:
+            name: Anzeigename
+            url: Video/Audio URL
+            position: Optional Position
+            max_duration: Max. Dauer in Sekunden
+
+        Returns:
+            NippelSound oder None
+        """
+        try:
+            # Hole Metadaten
+            logger.info("Hole Video-Informationen...")
+            info = self.universal_downloader.get_info(url)
+
+            if not info:
+                logger.error("Konnte Video-Informationen nicht abrufen")
+                return None
+
+            # Nutze Video-Titel falls kein Name angegeben
+            if not name or name.strip() == "":
+                name = info['title']
+                # Bereinige Name (keine Sonderzeichen)
+                name = "".join(c for c in name if c.isalnum() or c in (' ', '-', '_'))[:50]
+
+            logger.info(f"Titel: {info['title']}, Dauer: {info.get('duration', 0)}s")
+
+            # Prüfe ob Name bereits existiert
+            if get_sound_by_name(name):
+                logger.error(f"Sound mit Name '{name}' existiert bereits")
+                return None
+
+            # Download
+            output_path = self.sounds_dir / name
+            logger.info(f"Starte Download von: {url}")
+
+            success = self.universal_downloader.download(
+                url=url,
+                output_path=output_path,
+                format='mp3',
+                quality='128k',
+                max_duration=max_duration
+            )
+
+            if not success:
+                logger.error("Download fehlgeschlagen")
+                return None
+
+            # Finde heruntergeladene Datei
+            downloaded_file = self.sounds_dir / f"{name}.mp3"
+
+            if not downloaded_file.exists():
+                logger.error(f"Datei nicht gefunden: {downloaded_file}")
+                return None
+
+            # Download Thumbnail als Icon
+            icon_path = None
+            if info.get('thumbnail'):
+                icon_file = self.sounds_dir / f"{name}_icon.jpg"
+                if self.universal_downloader.download_thumbnail(url, icon_file):
+                    icon_path = str(icon_file)
+
+            # Hole Audio-Info
+            audio_info = self.processor.get_audio_info(str(downloaded_file))
+            duration = audio_info['duration_seconds'] if audio_info else None
+
+            # Füge zu DB hinzu
+            sound = add_sound(
+                name=name,
+                file_path=str(downloaded_file),
+                icon_path=icon_path,
+                position=position
+            )
+
+            # Setze Duration
+            if duration:
+                sound.duration = duration
+                sound.save()
+
+            logger.info(f"Sound erfolgreich hinzugefügt: {name} ({duration:.1f}s)")
+            return sound
+
+        except Exception as e:
+            logger.exception(f"Fehler beim Universal-Download: {e}")
+            return None
+
+    def _download_direct(self, name: str, url: str, icon_url: str = None,
+                        position: int = None) -> Optional[NippelSound]:
+        """
+        Direkter Download von Audio-URL
+
+        Args:
+            name: Anzeigename
+            url: Direkte Audio-URL
+            icon_url: Optional Icon-URL
+            position: Optional Position
+
+        Returns:
+            NippelSound oder None
         """
         try:
             # Prüfe Domain
@@ -129,7 +260,7 @@ class SoundManager:
                     return None
 
             # Download Audio
-            logger.info(f"Lade Sound herunter: {url}")
+            logger.info(f"Lade Sound herunter (direkt): {url}")
             response = requests.get(
                 url,
                 timeout=self.download_timeout,
@@ -181,7 +312,7 @@ class SoundManager:
             logger.error(f"Fehler beim Download von {url}: {e}")
             return None
         except Exception as e:
-            logger.error(f"Fehler bei Sound-Download: {e}")
+            logger.error(f"Fehler bei direktem Download: {e}")
             return None
 
     def _download_icon(self, name: str, icon_url: str) -> Optional[str]:
