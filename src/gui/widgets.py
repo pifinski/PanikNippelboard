@@ -13,6 +13,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 
+from ..utils.config import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,29 +44,33 @@ class SoundButton(QPushButton):
 
     def _setup_ui(self):
         """Setup UI"""
-        # Größe
-        self.setMinimumSize(150, 150)
-        self.setMaximumSize(200, 200)
+        # Größe aus Config
+        button_width = config.get('gui.button_width', 110)
+        button_height = config.get('gui.button_height', 110)
+        self.setMinimumSize(button_width, button_height)
+        self.setMaximumSize(button_width + 50, button_height + 50)
 
         # Icon falls vorhanden
         if self.icon_path and Path(self.icon_path).exists():
             icon = QIcon(self.icon_path)
             self.setIcon(icon)
-            self.setIconSize(QSize(100, 100))
+            # Icon etwas kleiner als Button
+            icon_size = min(button_width, button_height) - 20
+            self.setIconSize(QSize(icon_size, icon_size))
 
         # Text
         self.setText(self.sound_name)
 
-        # Style
+        # Style (kleinere Schrift für kleine Bildschirme)
         self.setStyleSheet("""
             QPushButton {
                 background-color: #2c3e50;
                 color: white;
                 border: 2px solid #34495e;
-                border-radius: 10px;
-                font-size: 14px;
+                border-radius: 8px;
+                font-size: 11px;
                 font-weight: bold;
-                padding: 5px;
+                padding: 3px;
             }
             QPushButton:hover {
                 background-color: #34495e;
@@ -88,10 +94,10 @@ class SoundButton(QPushButton):
                     background-color: #27ae60;
                     color: white;
                     border: 3px solid #2ecc71;
-                    border-radius: 10px;
-                    font-size: 14px;
+                    border-radius: 8px;
+                    font-size: 11px;
                     font-weight: bold;
-                    padding: 5px;
+                    padding: 3px;
                 }
             """)
         else:
@@ -129,13 +135,13 @@ class StatusPanel(QFrame):
 
         # Titel
         title = QLabel("📡 Funk-Monitor")
-        title.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
+        title.setStyleSheet("color: white; font-size: 13px; font-weight: bold;")
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
         # Ringbuffer-Status
         self.buffer_label = QLabel("Ringbuffer: 0%")
-        self.buffer_label.setStyleSheet("color: #ecf0f1;")
+        self.buffer_label.setStyleSheet("color: #ecf0f1; font-size: 10px;")
         layout.addWidget(self.buffer_label)
 
         self.buffer_progress = QProgressBar()
@@ -157,7 +163,7 @@ class StatusPanel(QFrame):
 
         # Panik-Status
         self.panic_label = QLabel("Panik-Modus: Inaktiv")
-        self.panic_label.setStyleSheet("color: #2ecc71; font-weight: bold;")
+        self.panic_label.setStyleSheet("color: #2ecc71; font-weight: bold; font-size: 10px;")
         layout.addWidget(self.panic_label)
 
         # Letzte Aufnahme
@@ -185,10 +191,10 @@ class StatusPanel(QFrame):
         if is_panic:
             panic_duration = status.get('panic_duration', 0)
             self.panic_label.setText(f"⚠️ PANIK-MODUS: {panic_duration:.0f}s")
-            self.panic_label.setStyleSheet("color: #e74c3c; font-weight: bold;")
+            self.panic_label.setStyleSheet("color: #e74c3c; font-weight: bold; font-size: 10px;")
         else:
             self.panic_label.setText("Panik-Modus: Inaktiv")
-            self.panic_label.setStyleSheet("color: #2ecc71; font-weight: bold;")
+            self.panic_label.setStyleSheet("color: #2ecc71; font-weight: bold; font-size: 10px;")
 
     def update_last_clip(self, filename: str):
         """Aktualisiert letzte Clip-Info"""
@@ -233,15 +239,15 @@ class ControlPanel(QFrame):
         layout = QVBoxLayout()
 
         # Clip-Button
-        self.clip_btn = QPushButton("💾 Clip Speichern")
-        self.clip_btn.setMinimumHeight(50)
+        self.clip_btn = QPushButton("💾 Clip")
+        self.clip_btn.setMinimumHeight(40)
         self.clip_btn.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
                 color: white;
                 border: none;
                 border-radius: 5px;
-                font-size: 14px;
+                font-size: 11px;
                 font-weight: bold;
             }
             QPushButton:hover {
@@ -255,8 +261,8 @@ class ControlPanel(QFrame):
         layout.addWidget(self.clip_btn)
 
         # Panik-Button
-        self.panic_btn = QPushButton("🚨 Panik-Modus")
-        self.panic_btn.setMinimumHeight(50)
+        self.panic_btn = QPushButton("🚨 Panik")
+        self.panic_btn.setMinimumHeight(40)
         self.panic_btn.setCheckable(True)
         self.panic_btn.setStyleSheet("""
             QPushButton {
@@ -264,7 +270,7 @@ class ControlPanel(QFrame):
                 color: white;
                 border: none;
                 border-radius: 5px;
-                font-size: 14px;
+                font-size: 11px;
                 font-weight: bold;
             }
             QPushButton:hover {
@@ -278,14 +284,15 @@ class ControlPanel(QFrame):
         layout.addWidget(self.panic_btn)
 
         # Add Sound Button
-        self.add_sound_btn = QPushButton("➕ Sound hinzufügen")
+        self.add_sound_btn = QPushButton("➕ Sound")
+        self.add_sound_btn.setMinimumHeight(35)
         self.add_sound_btn.setStyleSheet("""
             QPushButton {
                 background-color: #27ae60;
                 color: white;
                 border: none;
                 border-radius: 5px;
-                font-size: 12px;
+                font-size: 10px;
             }
             QPushButton:hover {
                 background-color: #229954;
@@ -295,14 +302,15 @@ class ControlPanel(QFrame):
         layout.addWidget(self.add_sound_btn)
 
         # Settings Button
-        self.settings_btn = QPushButton("⚙️ Einstellungen")
+        self.settings_btn = QPushButton("⚙️ Settings")
+        self.settings_btn.setMinimumHeight(35)
         self.settings_btn.setStyleSheet("""
             QPushButton {
                 background-color: #7f8c8d;
                 color: white;
                 border: none;
                 border-radius: 5px;
-                font-size: 12px;
+                font-size: 10px;
             }
             QPushButton:hover {
                 background-color: #95a5a6;
@@ -321,9 +329,9 @@ class ControlPanel(QFrame):
         self.panic_toggled.emit(self.panic_active)
 
         if self.panic_active:
-            self.panic_btn.setText("🚨 PANIK AKTIV - STOP")
+            self.panic_btn.setText("🚨 STOP")
         else:
-            self.panic_btn.setText("🚨 Panik-Modus")
+            self.panic_btn.setText("🚨 Panik")
 
     def set_panic_active(self, active: bool):
         """Setzt Panik-Status von außen"""

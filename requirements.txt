@@ -1,32 +1,30 @@
 # Audio-Verarbeitung
-sounddevice==0.4.6          # Audio I/O (Aufnahme/Wiedergabe)
-soundfile==0.12.1           # Audio-Datei Lesen/Schreiben
-pydub==0.25.1               # Audio-Bearbeitung (Schneiden, etc.)
-numpy==1.24.3               # Audio-Datenverarbeitung
+sounddevice>=0.4.6          # Audio I/O (Aufnahme/Wiedergabe)
+soundfile>=0.12.1           # Audio-Datei Lesen/Schreiben
+pydub>=0.25.1               # Audio-Bearbeitung (Schneiden, etc.)
+numpy>=1.26.0               # Audio-Datenverarbeitung (Python 3.13 kompatibel)
 
 # GUI
-PyQt5==5.15.9               # GUI Framework
-PyQt5-Qt5==5.15.2          # Qt5 Binaries
-Pillow==10.0.0              # Bildverarbeitung für Icons
+PyQt5>=5.15.9               # GUI Framework
+Pillow>=10.0.0              # Bildverarbeitung für Icons
 
 # GPIO (Raspberry Pi)
-RPi.GPIO==0.7.1             # GPIO-Steuerung
-# Alternative: gpiozero==2.0
+RPi.GPIO>=0.7.1             # GPIO-Steuerung
+# Alternative: gpiozero>=2.0
 
 # Verschlüsselung
-cryptography==41.0.3        # AES-256-GCM Verschlüsselung
+cryptography>=41.0.3        # AES-256-GCM Verschlüsselung
 
 # Datenbank & Config
-PyYAML==6.0.1               # YAML-Config
-peewee==3.16.3              # SQLite ORM (lightweight)
+PyYAML>=6.0.1               # YAML-Config
+peewee>=3.16.3              # SQLite ORM (lightweight)
 
 # Netzwerk (Sound-Downloads)
-requests==2.31.0            # HTTP-Client für Downloads
-urllib3==2.0.4              # URL-Handling
+requests>=2.31.0            # HTTP-Client für Downloads
 
 # Utilities
-python-dateutil==2.8.2      # Datum/Zeit-Handling
-psutil==5.9.5               # System-Monitoring (Speicher, CPU)
+python-dateutil>=2.8.2      # Datum/Zeit-Handling
+psutil>=5.9.5               # System-Monitoring (Speicher, CPU)
 
 # Logging
-colorlog==6.7.0             # Farbiges Logging
+colorlog>=6.7.0             # Farbiges Logging

@@ -81,19 +81,19 @@ storage:
 
 # Nippelboard GUI
 gui:
-  # Fenster-Größe
-  window_width: 1024
-  window_height: 600
+  # Fenster-Größe (800x480 für 7" Touchscreen)
+  window_width: 800
+  window_height: 480
 
   # Vollbild-Modus bei Start
-  fullscreen: false
+  fullscreen: true
 
-  # Button-Größe (Pixel)
-  button_width: 150
-  button_height: 150
+  # Button-Größe (Pixel) - kleiner für 800x480
+  button_width: 110
+  button_height: 110
 
-  # Spalten im Grid
-  grid_columns: 5
+  # Spalten im Grid - 3 Spalten für kleine Bildschirme
+  grid_columns: 3
 
   # Icon-Verzeichnis
   icons_dir: './assets/icons'
